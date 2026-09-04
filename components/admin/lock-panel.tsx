@@ -53,7 +53,7 @@ export function LockPanel({ locked }: { locked: boolean }) {
           </Button>
         ) : confirming ? (
           <>
-            <Button variant="accent" onClick={() => setLocked(true)} disabled={submitting}>
+            <Button variant="danger" onClick={() => setLocked(true)} disabled={submitting}>
               {submitting ? "Locking…" : "Yes, lock it in"}
             </Button>
             <Button variant="quiet" onClick={() => setConfirming(false)}>

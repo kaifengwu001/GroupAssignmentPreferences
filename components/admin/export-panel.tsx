@@ -43,7 +43,7 @@ export function ExportPanel({ persistent }: { persistent: boolean }) {
       </div>
 
       {persistent ? null : (
-        <p className="label mt-6 normal-case tracking-[0.08em] text-accent">
+        <p className="label mt-6 normal-case tracking-[0.08em] text-danger">
           No database is connected, so responses live in memory and vanish on restart.
           Set DATABASE_URL before using this with real students.
         </p>

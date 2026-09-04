@@ -39,7 +39,7 @@ export function TextArea({
   return <textarea className={cn(CONTROL, "resize-none leading-relaxed", className)} {...props} />;
 }
 
-/** Inline status line. Errors are red; everything else stays monochrome. */
+/** Inline status line. Only errors take colour; everything else stays monochrome. */
 export function Notice({
   tone,
   children,
@@ -48,7 +48,7 @@ export function Notice({
   children: React.ReactNode;
 }) {
   const toneClass =
-    tone === "error" ? "text-accent" : tone === "success" ? "text-ink" : "text-ink-soft";
+    tone === "error" ? "text-danger" : tone === "success" ? "text-accent" : "text-ink-soft";
 
   return (
     <p

@@ -3,7 +3,10 @@
 /*
  * Visual language borrowed from Nothing's print/packaging design: a light grey
  * field, lighter rounded cards, tiny wide-tracked uppercase monospace, numbered
- * sections, and a single red accent used sparingly.
+ * sections, and a single accent colour used sparingly.
+ *
+ * `accent` marks state (selected, live, mutual) and `danger` is reserved for
+ * errors and destructive confirmations, so the two never get confused.
  */
 @theme {
   --color-paper: #ebebeb;
@@ -13,7 +16,9 @@
   --color-ink-soft: #6f6f6f;
   --color-ink-faint: #a3a3a3;
   --color-line: #d6d6d6;
-  --color-accent: #d71921;
+  /* Deep enough to clear 4.5:1 on the card grey when used as text. */
+  --color-accent: #0a8043;
+  --color-danger: #d71921;
 
   --font-mono: var(--font-mono-stack);
   --font-sans: var(--font-mono-stack);

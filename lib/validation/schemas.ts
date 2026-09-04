@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 export const NAME_MAX = 60;
-export const PITCH_MAX = 400;
+export const PITCH_MAX = 300;
 export const PASSWORD_MIN = 4;
 export const PASSWORD_MAX = 100;
 
