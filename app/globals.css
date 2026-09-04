@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/*
+ * Visual language borrowed from Nothing's print/packaging design: a light grey
+ * field, lighter rounded cards, tiny wide-tracked uppercase monospace, numbered
+ * sections, and a single red accent used sparingly.
+ */
+@theme {
+  --color-paper: #ebebeb;
+  --color-card: #f5f5f5;
+  --color-card-alt: #e4e4e4;
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #6f6f6f;
+  --color-ink-faint: #a3a3a3;
+  --color-line: #d6d6d6;
+  --color-accent: #d71921;
+
+  --font-mono: var(--font-mono-stack);
+  --font-sans: var(--font-mono-stack);
+
+  --radius-card: 22px;
+  --radius-pill: 999px;
+}
+
+:root {
+  --font-mono-stack: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-mono-stack);
+  letter-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Faint dot matrix, echoing the perforated look of the reference. */
+.dot-field {
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.055) 1px, transparent 0);
+  background-size: 6px 6px;
+}
+
+/* Tiny uppercase caption used for every field label and metadata line. */
+.label {
+  font-size: 0.625rem;
+  line-height: 1.4;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/* The 01 / 02 / 03 step markers. */
+.index-mark {
+  font-size: 0.8125rem;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.hairline {
+  border-top: 1px solid var(--color-line);
+}
+
+/* Focus ring that reads as a deliberate part of the design, not a default. */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
