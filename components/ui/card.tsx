@@ -23,12 +23,15 @@ export function CardHeader({
   index,
   title,
   meta,
+  metaCase = "upper",
   children,
 }: {
   index?: string;
   title: string;
   /** A single caption, or several rendered one per line. */
   meta?: string | readonly string[];
+  /** Sentence case for captions long enough that all-caps hurts to read. */
+  metaCase?: "upper" | "sentence";
   children?: React.ReactNode;
 }) {
   const metaLines = meta === undefined ? [] : Array.isArray(meta) ? meta : [meta as string];
@@ -39,7 +42,13 @@ export function CardHeader({
         {index ? <p className="index-mark mb-6">{index}</p> : null}
         <h2 className="label text-ink">{title}</h2>
         {metaLines.map((line) => (
-          <p key={line} className="label mt-1 text-ink-faint">
+          <p
+            key={line}
+            className={cn(
+              "label mt-1 text-ink-faint",
+              metaCase === "sentence" && "normal-case tracking-[0.08em]",
+            )}
+          >
             {line}
           </p>
         ))}

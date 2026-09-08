@@ -127,6 +127,7 @@ export function SectionBoard({
             "Order matters — no limit on how many",
             "Pitches arrive live as classmates submit them. Come back as often as you like — add, remove, and reorder freely until the deadline.",
           ]}
+          metaCase="sentence"
         >
           <div className="text-right">
             <p className="label" aria-live="polite">

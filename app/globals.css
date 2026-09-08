@@ -44,32 +44,40 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Faint dot matrix, echoing the perforated look of the reference. */
-.dot-field {
-  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.055) 1px, transparent 0);
-  background-size: 6px 6px;
-}
+/*
+ * These live in the components layer on purpose. Plain rules outside a layer
+ * outrank every Tailwind utility, which silently swallowed `normal-case` and
+ * `tracking-*` overrides wherever they were applied on top of `.label`.
+ * Inside the layer, utilities win as expected.
+ */
+@layer components {
+  /* Faint dot matrix, echoing the perforated look of the reference. */
+  .dot-field {
+    background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.055) 1px, transparent 0);
+    background-size: 6px 6px;
+  }
 
-/* Tiny uppercase caption used for every field label and metadata line. */
-.label {
-  font-size: 0.625rem;
-  line-height: 1.4;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-ink-soft);
-}
+  /* Tiny uppercase caption used for every field label and metadata line. */
+  .label {
+    font-size: 0.625rem;
+    line-height: 1.4;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
 
-/* The 01 / 02 / 03 step markers. */
-.index-mark {
-  font-size: 0.8125rem;
-  letter-spacing: 0.16em;
-  font-weight: 500;
-  color: var(--color-ink);
-  font-variant-numeric: tabular-nums;
-}
+  /* The 01 / 02 / 03 step markers. */
+  .index-mark {
+    font-size: 0.8125rem;
+    letter-spacing: 0.16em;
+    font-weight: 500;
+    color: var(--color-ink);
+    font-variant-numeric: tabular-nums;
+  }
 
-.hairline {
-  border-top: 1px solid var(--color-line);
+  .hairline {
+    border-top: 1px solid var(--color-line);
+  }
 }
 
 /* Focus ring that reads as a deliberate part of the design, not a default. */

@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 
 const STEPS = [
   {
@@ -27,7 +27,9 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <Card>
-      <h2 className="label mb-8 text-ink">How it works</h2>
+      {/* Shares CardHeader with every other panel so the heading treatment and
+          spacing stay identical. No index: the four steps below carry 02-05. */}
+      <CardHeader title="How it works" />
 
       <ol className="grid list-none grid-cols-1 gap-8 p-0 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((step) => (
