@@ -12,6 +12,7 @@ export type ErrorCode =
   | "unauthenticated"
   | "pitch_required"
   | "section_required"
+  | "wrong_section"
   | "locked"
   | "not_found"
   | "internal";
@@ -59,6 +60,14 @@ export const pitchRequired = () =>
 
 export const sectionRequired = () =>
   new AppError("section_required", 403, "Choose which section you are in first.");
+
+/** The name is on the roster, but for the other section. */
+export const wrongSection = (name: string, correctLabel: string) =>
+  new AppError(
+    "wrong_section",
+    403,
+    `"${name}" is on the ${correctLabel} roster. Choose ${correctLabel} and sign in again.`,
+  );
 
 export const locked = () =>
   new AppError("locked", 423, "Preferences have been locked in.");

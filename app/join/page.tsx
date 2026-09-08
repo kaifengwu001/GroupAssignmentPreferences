@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/login-form";
 import { KeyDates } from "@/components/rules/key-dates";
 import { PageShell } from "@/components/ui/page-shell";
 import { currentStudentId } from "@/lib/auth/session";
-import { closesAt, resultsAt, roster, sectionTitle } from "@/lib/config";
+import { closesAt, resultsAt, rosterEnforced, sectionTitle } from "@/lib/config";
 import { formatDate, formatDateTime, timeRemaining } from "@/lib/dates";
 import { isLocked } from "@/lib/services/lock-service";
 import { getStore } from "@/lib/store";
@@ -26,7 +26,7 @@ export default async function JoinPage() {
       <div className="grid gap-2 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <LoginForm
-            rosterEnforced={roster().length > 0}
+            rosterEnforced={rosterEnforced()}
             initialSection={student?.section ?? null}
           />
 

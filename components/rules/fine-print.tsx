@@ -6,7 +6,7 @@ const RULES = [
   "Ranking someone is not a request you need their agreement for, and they are never told.",
   "There is no minimum and no maximum. Ranking more people gives you a better chance of landing a match.",
   "Groups are formed from everyone's rankings together, so a first choice is a strong signal but not a guarantee.",
-  "Sign in with the same name each time. Capitalisation and spacing matters.",
+  "Sign in with the same name each time.",
 ] as const;
 
 /** The rules proper, plus the section timetable. */
@@ -41,8 +41,8 @@ export function FinePrint() {
         </ul>
 
         <p className="label mt-6 normal-case tracking-[0.08em] text-ink-faint">
-          Picked the wrong one? Sign in again and choose the other — but your rankings
-          reset, since they no longer apply.
+          Pick the wrong one and sign-in will tell you which section you are on, so
+          nothing is lost.
         </p>
       </Card>
     </div>

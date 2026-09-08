@@ -4,6 +4,8 @@
  * rather than crashing the build.
  */
 
+import { SECTION_IDS, sectionEnrollment, type SectionId } from "@/lib/sections";
+
 const DEV_SESSION_SECRET = "dev-only-insecure-secret-change-me-0000000000";
 
 function isProduction(): boolean {
@@ -38,18 +40,45 @@ export function adminPassword(): string | null {
   return raw && raw.length > 0 ? raw : null;
 }
 
+/** Environment variable holding a given section's roster. */
+export function rosterEnvName(section: SectionId): string {
+  return `SECTION_ROSTER_${section.toUpperCase()}`;
+}
+
 /**
- * Optional allowlist of student names. When set, only these names may sign in.
- * Accepts newline- or comma-separated values.
+ * Optional per-section allowlist of student names. When set, only these names
+ * may sign in, and only to the section they appear under.
+ *
+ * Entries are separated by newlines or semicolons, never commas: rosters are
+ * normally exported as "Last, First", so a comma is part of a name rather
+ * than a delimiter.
  */
-export function roster(): readonly string[] {
-  const raw = process.env.SECTION_ROSTER?.trim();
+export function rosterFor(section: SectionId): readonly string[] {
+  const raw = process.env[rosterEnvName(section)]?.trim();
   if (!raw) return [];
 
   return raw
-    .split(/[\n,]/)
+    .split(/[\n;]/)
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0);
+}
+
+/**
+ * True when at least one section has a roster. Rosters are all-or-nothing in
+ * effect: with none configured, anybody may sign in under any name.
+ */
+export function rosterEnforced(): boolean {
+  return SECTION_IDS.some((id) => rosterFor(id).length > 0);
+}
+
+/**
+ * How many students to expect in a section, used as the "pitches in"
+ * denominator. A configured roster is authoritative; without one this falls
+ * back to the hand-maintained headcount in lib/sections.ts.
+ */
+export function expectedEnrollment(section: SectionId): number {
+  const rostered = rosterFor(section).length;
+  return rostered > 0 ? rostered : sectionEnrollment(section);
 }
 
 /** Heading shown across the app. */

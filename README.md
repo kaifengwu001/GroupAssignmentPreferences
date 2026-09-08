@@ -55,15 +55,27 @@ works with a keyboard, a screen reader, and a thumb.
 
 There is no email step. Identity rests on the name plus an optional password:
 
-- Matching ignores case, spacing, and punctuation, so `ada lovelace`,
-  `Ada  Lovelace`, and `ADA LOVELACE` are all the same student. The display
-  name is whatever they typed first.
+- Matching ignores case, accents, punctuation, spacing, **and the order of the
+  name parts**. A roster kept as `Okonjo Blake, Marcus` therefore also answers
+  to `marcus okonjo blake`, and `Rivera-Santos` to `Rivera Santos`. Students
+  cannot lock themselves out by writing their name the other way round.
+- Names are displayed in natural order, so a `Last, First` roster still reads
+  as `First Last` on a peer card.
 - A student may set a password at sign-in. Once set, it's required to get back
   in and edit.
 - A name with no password signs in freely, and the first password supplied
   claims it. Set `ALLOW_PASSWORD_CLAIM=false` to turn that off.
-- Set `SECTION_ROSTER` to restrict sign-in to a known list of names. This is
-  the strongest option, and the roster's spelling becomes the display name.
+- Set `SECTION_ROSTER_2PM` and `SECTION_ROSTER_3PM` to restrict sign-in to
+  known names, one per line. This is the strongest option: the roster's
+  spelling becomes the display name, its length becomes the "pitches in"
+  denominator, and a name may only join the section it is listed under —
+  picking the wrong one is rejected with a message naming the right one, so
+  nobody loses their rankings to a misclick.
+
+The one trade-off of order-insensitive matching is that two people whose names
+are word-anagrams of each other (`Kestrel, Devon` and `Devon, Kestrel`) would share
+an account. `npm test` checks the configured roster for exactly that, along
+with duplicates and anyone listed in both sections.
 
 ## Closing time
 
@@ -84,7 +96,31 @@ See `.env.example`. Required in production:
 - `ADMIN_PASSWORD` — guards `/admin`
 
 Dates: `CLOSES_AT`, `RESULTS_AT`, `DISPLAY_TIMEZONE`. Optional:
-`SECTION_TITLE`, `SECTION_ROSTER`, `ALLOW_PASSWORD_CLAIM`, `DATABASE_SSL`.
+`SECTION_TITLE`, `SECTION_ROSTER_2PM`, `SECTION_ROSTER_3PM`,
+`ALLOW_PASSWORD_CLAIM`, `DATABASE_SSL`.
+
+Keep real student names in the environment, never in the repo — this project
+is public.
+
+## Tests
+
+```bash
+npm test              # unit and service tests, in-memory store
+npm run test:coverage # with a coverage report, 80% floor
+```
+
+The store contract suite runs against both store implementations so they
+cannot drift apart. Point it at a throwaway database to include Postgres,
+which is the only way to exercise the real SQL:
+
+```bash
+docker run -d --name pitch-test -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=sectionpitch -p 55433:5432 postgres:16-alpine
+
+TEST_DATABASE_URL="postgresql://postgres:test@localhost:55433/sectionpitch" npm test
+```
+
+It truncates tables, so never aim it at real data.
 
 ## Deploying to Vercel
 

@@ -159,11 +159,39 @@ export function createPostgresStore(connectionString: string): Store {
           throw new Error(`moveToSection: student ${studentId} no longer exists`);
         }
 
+        // Whose ranking is about to develop a hole. Captured before the delete,
+        // because afterwards there is nothing left to identify them by.
+        const affected = await client.query<{ student_id: string }>(
+          "SELECT DISTINCT student_id FROM preferences WHERE target_id = $1 AND student_id <> $1",
+          [studentId],
+        );
+
         // Every edge in or out now crosses a section boundary, so drop them all.
         await client.query(
           "DELETE FROM preferences WHERE student_id = $1 OR target_id = $1",
           [studentId],
         );
+
+        // Close the gaps. rank has to stay a dense 1..n run: the CSV export
+        // reads it as choice_1, choice_2, ... so a hole at 1 would report
+        // somebody's top pick as their second.
+        const owners = affected.rows.map((row) => row.student_id);
+        if (owners.length > 0) {
+          await client.query(
+            `UPDATE preferences AS p
+                SET rank = renumbered.position
+               FROM (
+                 SELECT student_id,
+                        target_id,
+                        row_number() OVER (PARTITION BY student_id ORDER BY rank) AS position
+                   FROM preferences
+                  WHERE student_id = ANY($1::uuid[])
+               ) AS renumbered
+              WHERE p.student_id = renumbered.student_id
+                AND p.target_id = renumbered.target_id`,
+            [owners],
+          );
+        }
 
         return toStudent(updated.rows[0] as StudentRow);
       });

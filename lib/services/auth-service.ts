@@ -1,7 +1,8 @@
-import { allowPasswordClaim, roster } from "@/lib/config";
+import { allowPasswordClaim, rosterEnforced, rosterFor } from "@/lib/config";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { notOnRoster, passwordRequired, wrongPassword } from "@/lib/errors";
-import { normalizeName, toNameKey } from "@/lib/names";
+import { notOnRoster, passwordRequired, wrongPassword, wrongSection } from "@/lib/errors";
+import { displayName, normalizeName, toNameKey } from "@/lib/names";
+import { SECTION_IDS, sectionLabel, type SectionId } from "@/lib/sections";
 import { getStore } from "@/lib/store";
 import type { Student } from "@/lib/store/types";
 import type { LoginInput } from "@/lib/validation/schemas";
@@ -19,13 +20,18 @@ import { assertUnlocked } from "./lock-service";
  *  - A name with a password always requires the matching password.
  */
 
-/** Returns the roster's canonical spelling so the shared list stays tidy. */
-function resolveRosterName(nameKey: string): string | null {
-  const entries = roster();
-  if (entries.length === 0) return null;
+/**
+ * Returns the roster's spelling of a name, in natural order, so the shared
+ * list stays tidy no matter how each student typed themselves in.
+ */
+function resolveRosterName(nameKey: string, section: SectionId): string | null {
+  const match = rosterFor(section).find((entry) => toNameKey(entry) === nameKey);
+  return match ? displayName(match) : null;
+}
 
-  const match = entries.find((entry) => toNameKey(entry) === nameKey);
-  return match ? normalizeName(match) : null;
+/** The section a name actually belongs to, when it is not the one chosen. */
+function findRosteredSection(nameKey: string): SectionId | null {
+  return SECTION_IDS.find((id) => resolveRosterName(nameKey, id) !== null) ?? null;
 }
 
 export async function signIn(input: LoginInput): Promise<Student> {
@@ -39,11 +45,15 @@ export async function signIn(input: LoginInput): Promise<Student> {
     throw notOnRoster(typedName);
   }
 
-  const rosterEntries = roster();
-  const canonicalName = resolveRosterName(nameKey);
+  const canonicalName = resolveRosterName(nameKey, input.section);
 
-  if (rosterEntries.length > 0 && canonicalName === null) {
-    throw notOnRoster(typedName);
+  if (rosterEnforced() && canonicalName === null) {
+    // Naming the right section is far more useful than a bare rejection, since
+    // picking the wrong one is the likeliest reason a real student lands here.
+    const elsewhere = findRosteredSection(nameKey);
+    throw elsewhere
+      ? wrongSection(typedName, sectionLabel(elsewhere))
+      : notOnRoster(typedName);
   }
 
   const store = await getStore();
@@ -51,7 +61,7 @@ export async function signIn(input: LoginInput): Promise<Student> {
 
   if (!existing) {
     return store.createStudent({
-      name: canonicalName ?? typedName,
+      name: canonicalName ?? displayName(typedName),
       nameKey,
       section: input.section,
       passwordHash: password ? await hashPassword(password) : null,

@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.vitest
 
 # next.js
 /.next/
@@ -32,6 +33,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the template carries no secrets and is the setup reference.
+!.env.example
 
 # vercel
 .vercel
