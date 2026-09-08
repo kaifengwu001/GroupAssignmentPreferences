@@ -58,7 +58,7 @@ export function SectionSummary({
       </div>
 
       <dl className="hairline mt-8 grid grid-cols-2 gap-4 pt-6 sm:grid-cols-4">
-        <Stat label="You ranked" value={rankedCount} />
+        <Stat label="You picked" value={rankedCount} />
         <Stat label="Your first choice" value={topChoice ?? "—"} />
         <Stat label="Pitches in" value={`${pitchCount} / ${totalCount}`} />
         <Stat label="Closes" value={remaining ?? "—"} />

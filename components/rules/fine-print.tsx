@@ -4,9 +4,9 @@ import { SECTIONS } from "@/lib/sections";
 const RULES = [
   "Your pitch is public to your section. Your rankings are not — nobody sees who you picked except the instructor.",
   "Ranking someone is not a request you need their agreement for, and they are never told.",
-  "There is no minimum and no maximum. Ranking more people, honestly ordered, gives you a better chance of landing a match.",
+  "There is no minimum and no maximum. Ranking more people gives you a better chance of landing a match.",
   "Groups are formed from everyone's rankings together, so a first choice is a strong signal but not a guarantee.",
-  "Sign in with the same name each time. Capitalisation and spacing do not matter.",
+  "Sign in with the same name each time. Capitalisation and spacing matters.",
 ] as const;
 
 /** The rules proper, plus the section timetable. */

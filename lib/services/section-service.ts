@@ -1,5 +1,6 @@
 import { sectionRequired, unauthenticated } from "@/lib/errors";
 import { sortByName } from "@/lib/names";
+import { sectionEnrollment } from "@/lib/sections";
 import { getStore } from "@/lib/store";
 import type { PeerView, SectionView } from "@/lib/types/section";
 
@@ -53,6 +54,7 @@ export async function getSectionView(studentId: string): Promise<SectionView> {
     orderedSelectedIds: orderedSelectedIds.filter((id) => peerIds.has(id)),
     locked,
     pitchCount: cohort.filter((student) => student.pitch !== null).length,
+    expectedStudents: sectionEnrollment(me.section),
   };
 }
 

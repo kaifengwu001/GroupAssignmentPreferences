@@ -114,7 +114,7 @@ export function SectionBoard({
         rankedCount={entries.length}
         topChoice={entries[0]?.name ?? null}
         pitchCount={view.pitchCount}
-        totalCount={peers.length + 1}
+        totalCount={view.expectedStudents}
         closesLabel={closesLabel}
         remaining={remaining}
       />
@@ -123,7 +123,10 @@ export function SectionBoard({
         <CardHeader
           index="04"
           title="Rank who you want to work with"
-          meta="Order matters — no limit on how many"
+          meta={[
+            "Order matters — no limit on how many",
+            "Pitches arrive live as classmates submit them. Come back as often as you like — add, remove, and reorder freely until the deadline.",
+          ]}
         >
           <div className="text-right">
             <p className="label" aria-live="polite">
@@ -132,20 +135,6 @@ export function SectionBoard({
             {offline ? <Notice tone="error">Reconnecting…</Notice> : null}
           </div>
         </CardHeader>
-
-        <div className="mb-8 grid gap-4 rounded-2xl bg-paper p-6 sm:grid-cols-2">
-          <p className="text-sm leading-relaxed tracking-[0.01em] text-ink">
-            <span className="text-accent">Order is your preference.</span> The first person
-            you add becomes your first choice, the next your second, and so on. Groups are
-            built from everyone&rsquo;s rankings, so earlier choices carry more weight —
-            put your strongest match at the top.
-          </p>
-          <p className="text-sm leading-relaxed tracking-[0.01em] text-ink-soft">
-            Pitches arrive live as classmates submit them, and this list updates on its own
-            every few seconds. Come back as often as you like — add, remove, and reorder
-            freely until the deadline. Nothing is final until then.
-          </p>
-        </div>
 
         <div className="mb-8">
           <h3 className="label mb-3 text-ink">

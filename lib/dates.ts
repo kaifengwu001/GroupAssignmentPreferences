@@ -9,9 +9,23 @@ function timezone(): string {
   return process.env.DISPLAY_TIMEZONE?.trim() || "America/Los_Angeles";
 }
 
-/** e.g. "Thu 17 September, 11:59 pm PDT" */
+/**
+ * en-GB gives the day-before-month wording we want, but renders the zone as
+ * "GMT-7". en-US names it properly, so the abbreviation is formatted
+ * separately and appended.
+ */
+function zoneAbbreviation(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone(),
+    timeZoneName: "short",
+  }).formatToParts(date);
+
+  return parts.find((part) => part.type === "timeZoneName")?.value ?? "";
+}
+
+/** e.g. "Thu 17 September at 11:59 pm PDT" */
 export function formatDateTime(date: Date): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  const formatted = new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "long",
@@ -19,8 +33,10 @@ export function formatDateTime(date: Date): string {
     minute: "2-digit",
     hour12: true,
     timeZone: timezone(),
-    timeZoneName: "short",
   }).format(date);
+
+  const zone = zoneAbbreviation(date);
+  return zone ? `${formatted} ${zone}` : formatted;
 }
 
 /** e.g. "Friday 18 September" */

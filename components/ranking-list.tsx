@@ -68,14 +68,24 @@ export function RankingList({
 
             <span className="flex shrink-0 items-center gap-1">
               <IconButton
-                label={`Move ${entry.name} up to ${ordinal(rank - 1)} choice`}
+                // At the ends there is no destination rank to name, and
+                // "0th choice" would be read aloud verbatim.
+                label={
+                  isFirst
+                    ? `${entry.name} is already your first choice`
+                    : `Move ${entry.name} up to ${ordinal(rank - 1)} choice`
+                }
                 disabled={disabled || isFirst}
                 onClick={() => onMove(entry.id, -1)}
               >
                 ↑
               </IconButton>
               <IconButton
-                label={`Move ${entry.name} down to ${ordinal(rank + 1)} choice`}
+                label={
+                  isLast
+                    ? `${entry.name} is already your last choice`
+                    : `Move ${entry.name} down to ${ordinal(rank + 1)} choice`
+                }
                 disabled={disabled || isLast}
                 onClick={() => onMove(entry.id, 1)}
               >

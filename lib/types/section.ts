@@ -30,4 +30,6 @@ export type SectionView = {
   readonly orderedSelectedIds: readonly string[];
   readonly locked: boolean;
   readonly pitchCount: number;
+  /** Roster headcount for this section, not a count of who has signed in. */
+  readonly expectedStudents: number;
 };

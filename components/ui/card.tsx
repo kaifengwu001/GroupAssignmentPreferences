@@ -27,15 +27,22 @@ export function CardHeader({
 }: {
   index?: string;
   title: string;
-  meta?: string;
+  /** A single caption, or several rendered one per line. */
+  meta?: string | readonly string[];
   children?: React.ReactNode;
 }) {
+  const metaLines = meta === undefined ? [] : Array.isArray(meta) ? meta : [meta as string];
+
   return (
     <header className="mb-8 flex items-start justify-between gap-4">
-      <div>
+      <div className="max-w-2xl">
         {index ? <p className="index-mark mb-6">{index}</p> : null}
         <h2 className="label text-ink">{title}</h2>
-        {meta ? <p className="label mt-1 text-ink-faint">{meta}</p> : null}
+        {metaLines.map((line) => (
+          <p key={line} className="label mt-1 text-ink-faint">
+            {line}
+          </p>
+        ))}
       </div>
       {children ? <div className="shrink-0">{children}</div> : null}
     </header>
