@@ -7,19 +7,27 @@ import { Button, LinkButton } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { apiSend } from "@/lib/client/api";
 
-/** The student's own pitch, with the affordance to change it or sign out. */
+/** The student's own pitch and standing, with the way to change either. */
 export function SectionSummary({
   name,
+  sectionName,
   pitch,
-  selectedCount,
+  rankedCount,
+  topChoice,
   pitchCount,
   totalCount,
+  closesLabel,
+  remaining,
 }: {
   name: string;
+  sectionName: string;
   pitch: string | null;
-  selectedCount: number;
+  rankedCount: number;
+  topChoice: string | null;
   pitchCount: number;
   totalCount: number;
+  closesLabel: string | null;
+  remaining: string | null;
 }) {
   const router = useRouter();
 
@@ -30,7 +38,7 @@ export function SectionSummary({
 
   return (
     <Card className="mb-2">
-      <CardHeader index="03" title={`Signed in as ${name}`}>
+      <CardHeader index="03" title={`${name} · ${sectionName} section`}>
         <Button variant="quiet" onClick={signOut}>
           Sign out
         </Button>
@@ -49,19 +57,19 @@ export function SectionSummary({
         </LinkButton>
       </div>
 
-      <dl className="hairline mt-8 grid grid-cols-3 gap-4 pt-6">
-        <Stat label="You selected" value={selectedCount} />
+      <dl className="hairline mt-8 grid grid-cols-2 gap-4 pt-6 sm:grid-cols-4">
+        <Stat label="You ranked" value={rankedCount} />
+        <Stat label="Your first choice" value={topChoice ?? "—"} />
         <Stat label="Pitches in" value={`${pitchCount} / ${totalCount}`} />
-        <Stat label="Choices are" value="Private" />
+        <Stat label="Closes" value={remaining ?? "—"} />
       </dl>
 
       <p className="label mt-6 normal-case tracking-[0.08em] text-ink-faint">
-        Nobody can see who you picked — only your instructor. Come back and change your
-        selections any time before they are locked.{" "}
-        <Link href="/pitch" className="underline decoration-line underline-offset-4">
-          Update your pitch
+        Nobody can see who you ranked — only your instructor.
+        {closesLabel ? ` Everything closes ${closesLabel}.` : ""}{" "}
+        <Link href="/" className="underline decoration-line underline-offset-4">
+          Rules
         </Link>
-        .
       </p>
     </Card>
   );
@@ -71,7 +79,9 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
       <dt className="label">{label}</dt>
-      <dd className="mt-1 text-[0.8125rem] tracking-[0.14em] tabular-nums">{value}</dd>
+      <dd className="mt-1 truncate text-[0.8125rem] tracking-[0.14em] tabular-nums">
+        {value}
+      </dd>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 
+import { isSectionId, type SectionId } from "@/lib/sections";
+
 import { MIGRATIONS } from "./migrations";
 import type {
   CreateStudentInput,
@@ -13,6 +15,7 @@ type StudentRow = {
   id: string;
   name: string;
   name_key: string;
+  section: string | null;
   password_hash: string | null;
   pitch: string | null;
   created_at: Date;
@@ -24,6 +27,8 @@ function toStudent(row: StudentRow): Student {
     id: row.id,
     name: row.name,
     nameKey: row.name_key,
+    // Guard against a value that predates or outlives the current section list.
+    section: isSectionId(row.section) ? row.section : null,
     pitch: row.pitch,
     hasPassword: row.password_hash !== null,
     createdAt: row.created_at.toISOString(),
@@ -115,11 +120,11 @@ export function createPostgresStore(connectionString: string): Store {
       // If two devices race on the same new name, the loser gets the existing
       // row back rather than a unique-violation error.
       const rows = await query<StudentRow>(
-        `INSERT INTO students (name, name_key, password_hash)
-         VALUES ($1, $2, $3)
+        `INSERT INTO students (name, name_key, section, password_hash)
+         VALUES ($1, $2, $3, $4)
          ON CONFLICT (name_key) DO UPDATE SET name = students.name
          RETURNING *`,
-        [input.name, input.nameKey, input.passwordHash],
+        [input.name, input.nameKey, input.section, input.passwordHash],
       );
       return toStudent(rows[0]);
     },
@@ -143,36 +148,62 @@ export function createPostgresStore(connectionString: string): Store {
       return toStudent(rows[0]);
     },
 
+    async moveToSection(studentId: string, section: SectionId) {
+      return withTransaction(async (client) => {
+        const updated = await client.query(
+          "UPDATE students SET section = $1, updated_at = now() WHERE id = $2 RETURNING *",
+          [section, studentId],
+        );
+
+        if (updated.rows.length === 0) {
+          throw new Error(`moveToSection: student ${studentId} no longer exists`);
+        }
+
+        // Every edge in or out now crosses a section boundary, so drop them all.
+        await client.query(
+          "DELETE FROM preferences WHERE student_id = $1 OR target_id = $1",
+          [studentId],
+        );
+
+        return toStudent(updated.rows[0] as StudentRow);
+      });
+    },
+
     async listPreferences(studentId) {
       const rows = await query<{ target_id: string }>(
-        "SELECT target_id FROM preferences WHERE student_id = $1",
+        "SELECT target_id FROM preferences WHERE student_id = $1 ORDER BY rank ASC",
         [studentId],
       );
       return rows.map((row) => row.target_id);
     },
 
     async listAllPreferences() {
-      const rows = await query<{ student_id: string; target_id: string }>(
-        "SELECT student_id, target_id FROM preferences",
+      const rows = await query<{ student_id: string; target_id: string; rank: number }>(
+        "SELECT student_id, target_id, rank FROM preferences ORDER BY student_id, rank ASC",
       );
       return rows.map(
-        (row): PreferenceEdge => ({ studentId: row.student_id, targetId: row.target_id }),
+        (row): PreferenceEdge => ({
+          studentId: row.student_id,
+          targetId: row.target_id,
+          rank: row.rank,
+        }),
       );
     },
 
-    async replacePreferences(studentId, targetIds) {
-      const unique = [...new Set(targetIds)].filter((id) => id !== studentId);
+    async replacePreferences(studentId, orderedTargetIds) {
+      const unique = [...new Set(orderedTargetIds)].filter((id) => id !== studentId);
 
       // One transaction, so a concurrent reader never sees the gap between
-      // clearing the old selection set and writing the new one.
+      // clearing the old selection set and writing the new one. WITH ORDINALITY
+      // turns array position into a dense 1-based rank.
       await withTransaction(async (client) => {
         await client.query("DELETE FROM preferences WHERE student_id = $1", [studentId]);
 
         if (unique.length > 0) {
           await client.query(
-            `INSERT INTO preferences (student_id, target_id)
-             SELECT $1, target FROM unnest($2::uuid[]) AS target
-             ON CONFLICT DO NOTHING`,
+            `INSERT INTO preferences (student_id, target_id, rank)
+             SELECT $1, target, ordinality
+             FROM unnest($2::uuid[]) WITH ORDINALITY AS t(target, ordinality)`,
             [studentId, unique],
           );
         }

@@ -1,11 +1,14 @@
-import { toCsv } from "@/lib/csv";
-import { sortByName } from "@/lib/names";
-import { getStore } from "@/lib/store";
-import type { PreferenceEdge, Student } from "@/lib/store/types";
+import { CSV_BOM, toCsv, toCsvBody, type CsvRow } from "@/lib/csv";
+import { SECTIONS, sectionLabel } from "@/lib/sections";
+
+import { getAdminView, type AdminGroup, type AdminRow } from "./admin-service";
 
 /**
- * CSV views over the same data. `students` is the one to open first; `pairs`
- * suits scripting or pivot tables; `matrix` is the grid to eyeball for groups.
+ * CSV views over the same data. All three carry the section and the rank of
+ * every choice, since rank is what drives grouping.
+ *
+ * `students` is the one to open first; `pairs` suits scripting or pivot
+ * tables; `matrix` is the grid to eyeball, emitted as one block per section.
  */
 
 export type ExportFormat = "students" | "pairs" | "matrix";
@@ -16,122 +19,124 @@ export function isExportFormat(value: string): value is ExportFormat {
   return (EXPORT_FORMATS as readonly string[]).includes(value);
 }
 
-type Dataset = {
-  readonly students: readonly Student[];
-  readonly chosenBy: ReadonlyMap<string, readonly string[]>;
-  readonly choices: ReadonlyMap<string, readonly string[]>;
-};
-
-function group(edges: readonly PreferenceEdge[], key: "studentId" | "targetId") {
-  return edges.reduce((acc, edge) => {
-    const bucket = acc.get(edge[key]) ?? [];
-    const other = key === "studentId" ? edge.targetId : edge.studentId;
-    return new Map(acc).set(edge[key], [...bucket, other]);
-  }, new Map<string, readonly string[]>());
+/** "1. Ada; 2. Grace; 3. Alan" — rank order made obvious in a single cell. */
+function rankedList(entries: readonly { name: string; rank: number }[]): string {
+  return entries.map((entry) => `${entry.rank}. ${entry.name}`).join("; ");
 }
 
-async function loadDataset(): Promise<Dataset> {
-  const store = await getStore();
-  const [students, edges] = await Promise.all([
-    store.listStudents(),
-    store.listAllPreferences(),
-  ]);
-
-  return {
-    students: sortByName([...students]),
-    choices: group(edges, "studentId"),
-    chosenBy: group(edges, "targetId"),
-  };
-}
-
-function nameOf(dataset: Dataset, id: string): string {
-  return dataset.students.find((student) => student.id === id)?.name ?? "(removed)";
-}
-
-function namesOf(dataset: Dataset, ids: readonly string[]): string[] {
-  return ids.map((id) => nameOf(dataset, id)).sort((a, b) => a.localeCompare(b));
-}
-
-function studentsCsv(dataset: Dataset): string {
-  const rows = dataset.students.map((student) => {
-    const chose = dataset.choices.get(student.id) ?? [];
-    const chosen = dataset.chosenBy.get(student.id) ?? [];
-    const mutual = chose.filter((id) => (dataset.choices.get(id) ?? []).includes(student.id));
+function studentsCsv(rows: readonly AdminRow[]): string {
+  const csvRows = rows.map((row): CsvRow => {
+    const [first, second, third] = row.choices;
 
     return [
-      student.name,
-      student.pitch ?? "",
-      student.pitch ? "yes" : "no",
-      chose.length,
-      chosen.length,
-      mutual.length,
-      namesOf(dataset, chose).join("; "),
-      namesOf(dataset, chosen).join("; "),
-      namesOf(dataset, mutual).join("; "),
-      student.updatedAt,
+      row.name,
+      sectionLabel(row.section),
+      row.pitch ?? "",
+      row.pitch ? "yes" : "no",
+      row.choices.length,
+      first?.name ?? "",
+      second?.name ?? "",
+      third?.name ?? "",
+      rankedList(row.choices),
+      row.chosenBy.length,
+      rankedList(row.chosenBy),
+      row.mutual.length,
+      row.mutual.join("; "),
+      row.updatedAt,
     ];
   });
 
   return toCsv(
     [
       "name",
+      "section",
       "pitch",
       "submitted_pitch",
-      "num_selected",
-      "num_times_selected",
+      "num_choices",
+      "choice_1",
+      "choice_2",
+      "choice_3",
+      "all_choices_ranked",
+      "num_times_chosen",
+      "chosen_by_with_their_rank",
       "num_mutual",
-      "selected",
-      "selected_by",
       "mutual",
       "last_updated",
     ],
-    rows,
+    csvRows,
   );
 }
 
-function pairsCsv(dataset: Dataset): string {
-  const rows = dataset.students.flatMap((student) =>
-    namesOf(dataset, dataset.choices.get(student.id) ?? []).map((targetName) => {
-      const targetId = dataset.students.find((other) => other.name === targetName)?.id;
-      const reciprocal =
-        targetId !== undefined &&
-        (dataset.choices.get(targetId) ?? []).includes(student.id);
+function pairsCsv(rows: readonly AdminRow[]): string {
+  const mutualNames = new Map(rows.map((row) => [row.name, new Set(row.mutual)]));
 
-      return [student.name, targetName, reciprocal ? "yes" : "no"];
-    }),
+  const csvRows = rows.flatMap((row) =>
+    row.choices.map(
+      (choice): CsvRow => [
+        row.name,
+        sectionLabel(row.section),
+        choice.name,
+        choice.rank,
+        mutualNames.get(row.name)?.has(choice.name) ? "yes" : "no",
+      ],
+    ),
   );
 
-  return toCsv(["chooser", "chosen", "mutual"], rows);
+  return toCsv(["chooser", "section", "chosen", "rank", "mutual"], csvRows);
 }
 
-function matrixCsv(dataset: Dataset): string {
-  const headers = ["chooser \\ chosen", ...dataset.students.map((student) => student.name)];
+/**
+ * One grid per section. Cells hold the rank (1 = first choice), 0 for no
+ * choice, and "x" on the diagonal — a leading dash would trip the spreadsheet
+ * formula guard and show up quoted.
+ */
+function matrixCsv(groups: readonly AdminGroup[]): string {
+  // Blocks are concatenated, so each is emitted bare and the BOM is prepended
+  // once at the very start of the file.
+  const blocks = groups
+    .map((group) => {
+      if (group.rows.length === 0) {
+        return toCsvBody([`${group.label} section`], [["No students yet"]]);
+      }
 
-  const rows = dataset.students.map((student) => {
-    const chose = new Set(dataset.choices.get(student.id) ?? []);
-    return [
-      student.name,
-      // "x" rather than "-" on the diagonal: a leading dash would trip the
-      // spreadsheet formula guard and show up quoted.
-      ...dataset.students.map((other) => {
-        if (other.id === student.id) return "x";
-        return chose.has(other.id) ? "1" : "0";
-      }),
-    ];
-  });
+      const names = group.rows.map((row) => row.name);
+      const headers = [`${group.label} — chooser \\ chosen`, ...names];
 
-  return toCsv(headers, rows);
+      const csvRows = group.rows.map((row): CsvRow => {
+        const rankByName = new Map(row.choices.map((choice) => [choice.name, choice.rank]));
+
+        return [
+          row.name,
+          ...group.rows.map((other) =>
+            other.id === row.id ? "x" : (rankByName.get(other.name) ?? 0),
+          ),
+        ];
+      });
+
+      return toCsvBody(headers, csvRows);
+    })
+    .join("\r\n");
+
+  return `${CSV_BOM}${blocks}`;
 }
 
 export async function buildExport(format: ExportFormat): Promise<string> {
-  const dataset = await loadDataset();
+  const view = await getAdminView();
+
+  // Section order follows the timetable, with any unassigned students last.
+  const ordered = [
+    ...SECTIONS.flatMap(
+      (section) => view.groups.find((group) => group.id === section.id)?.rows ?? [],
+    ),
+    ...view.unassigned,
+  ];
 
   switch (format) {
     case "students":
-      return studentsCsv(dataset);
+      return studentsCsv(ordered);
     case "pairs":
-      return pairsCsv(dataset);
+      return pairsCsv(ordered);
     case "matrix":
-      return matrixCsv(dataset);
+      return matrixCsv(view.groups);
   }
 }

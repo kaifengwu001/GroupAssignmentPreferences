@@ -1,4 +1,5 @@
 import { sortByName } from "@/lib/names";
+import type { SectionId } from "@/lib/sections";
 
 import type {
   CreateStudentInput,
@@ -18,7 +19,8 @@ import type {
 
 type MemoryState = {
   students: Map<string, StudentWithSecret>;
-  preferences: Map<string, ReadonlySet<string>>;
+  /** Ordered best-first, mirroring the rank column in Postgres. */
+  preferences: Map<string, readonly string[]>;
   settings: Map<string, string>;
 };
 
@@ -74,6 +76,7 @@ export function createMemoryStore(): Store {
         id: crypto.randomUUID(),
         name: input.name,
         nameKey: input.nameKey,
+        section: input.section,
         passwordHash: input.passwordHash,
         pitch: null,
         hasPassword: input.passwordHash !== null,
@@ -112,25 +115,58 @@ export function createMemoryStore(): Store {
       return publicView(next);
     },
 
+    async moveToSection(studentId: string, section: SectionId) {
+      const current = state().students.get(studentId);
+      if (!current) {
+        throw new Error(`moveToSection: student ${studentId} no longer exists`);
+      }
+
+      const next: StudentWithSecret = {
+        ...current,
+        section,
+        updatedAt: new Date().toISOString(),
+      };
+      state().students.set(studentId, next);
+
+      // Drop every edge touching this student; they all cross sections now.
+      state().preferences.delete(studentId);
+      for (const [ownerId, targets] of state().preferences.entries()) {
+        if (targets.includes(studentId)) {
+          state().preferences.set(
+            ownerId,
+            targets.filter((id) => id !== studentId),
+          );
+        }
+      }
+
+      return publicView(next);
+    },
+
     async listPreferences(studentId) {
-      return [...(state().preferences.get(studentId) ?? new Set<string>())];
+      return [...(state().preferences.get(studentId) ?? [])];
     },
 
     async listAllPreferences() {
       const edges: PreferenceEdge[] = [];
 
       for (const [studentId, targets] of state().preferences.entries()) {
-        for (const targetId of targets) {
-          edges.push({ studentId, targetId });
-        }
+        targets.forEach((targetId, index) => {
+          edges.push({ studentId, targetId, rank: index + 1 });
+        });
       }
 
       return edges;
     },
 
-    async replacePreferences(studentId, targetIds) {
-      const unique = new Set([...targetIds].filter((id) => id !== studentId));
-      state().preferences.set(studentId, unique);
+    async replacePreferences(studentId, orderedTargetIds) {
+      const seen = new Set<string>();
+      const ordered = orderedTargetIds.filter((id) => {
+        if (id === studentId || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+
+      state().preferences.set(studentId, ordered);
     },
 
     async getSetting(key) {

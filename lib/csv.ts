@@ -18,10 +18,20 @@ function escapeField(value: string | number | null | undefined): string {
 
 export type CsvRow = readonly (string | number | null | undefined)[];
 
-export function toCsv(headers: readonly string[], rows: readonly CsvRow[]): string {
+/** Byte-order mark, so Excel detects UTF-8 and renders accented names correctly. */
+export const CSV_BOM = "\uFEFF";
+
+/**
+ * A bare block with no BOM. Use this when concatenating several tables into
+ * one file; the BOM belongs only at the very start.
+ */
+export function toCsvBody(headers: readonly string[], rows: readonly CsvRow[]): string {
   const lines = [headers, ...rows].map((row) => row.map(escapeField).join(","));
-  // Leading BOM so Excel detects UTF-8 and renders accented names correctly.
-  return `\uFEFF${lines.join("\r\n")}\r\n`;
+  return `${lines.join("\r\n")}\r\n`;
+}
+
+export function toCsv(headers: readonly string[], rows: readonly CsvRow[]): string {
+  return `${CSV_BOM}${toCsvBody(headers, rows)}`;
 }
 
 export function csvFilename(base: string): string {

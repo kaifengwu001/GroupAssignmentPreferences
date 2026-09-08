@@ -5,15 +5,30 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { ChoiceGroup } from "@/components/ui/choice-group";
 import { Field, Notice, TextInput } from "@/components/ui/field";
 import { apiSend } from "@/lib/client/api";
+import { SECTIONS, type SectionId } from "@/lib/sections";
 import { NAME_MAX, PASSWORD_MAX } from "@/lib/validation/schemas";
 
-type LoginResult = { id: string; name: string; hasPitch: boolean };
+type LoginResult = { id: string; name: string; section: SectionId; hasPitch: boolean };
 
-export function LoginForm({ rosterEnforced }: { rosterEnforced: boolean }) {
+const SECTION_OPTIONS = SECTIONS.map((section) => ({
+  value: section.id,
+  label: section.label,
+  hint: section.blurb,
+}));
+
+export function LoginForm({
+  rosterEnforced,
+  initialSection,
+}: {
+  rosterEnforced: boolean;
+  initialSection: SectionId | null;
+}) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [section, setSection] = useState<SectionId | null>(initialSection);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [passwordFocus, setPasswordFocus] = useState(false);
@@ -24,12 +39,16 @@ export function LoginForm({ rosterEnforced }: { rosterEnforced: boolean }) {
     setError(null);
     setSubmitting(true);
 
-    const result = await apiSend<LoginResult>("/api/auth/login", "POST", { name, password });
+    const result = await apiSend<LoginResult>("/api/auth/login", "POST", {
+      name,
+      section,
+      password,
+    });
 
     if (!result.ok) {
       setError(result.message);
-      // These two cases are only fixable by supplying the right password, so
-      // pull attention to that field.
+      // These two are only fixable by supplying the right password, so pull
+      // attention to that field.
       setPasswordFocus(result.code === "password_required" || result.code === "wrong_password");
       setSubmitting(false);
       return;
@@ -46,7 +65,7 @@ export function LoginForm({ rosterEnforced }: { rosterEnforced: boolean }) {
         meta={rosterEnforced ? "Roster names only" : undefined}
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-7">
         <Field
           label="Your name"
           htmlFor="name"
@@ -64,6 +83,20 @@ export function LoginForm({ rosterEnforced }: { rosterEnforced: boolean }) {
             placeholder="Ada Lovelace"
           />
         </Field>
+
+        <div>
+          <ChoiceGroup
+            legend="Which section are you in?"
+            name="section"
+            value={section}
+            options={SECTION_OPTIONS}
+            onChange={setSection}
+          />
+          <p className="label mt-2 normal-case tracking-[0.08em] text-ink-faint">
+            You will only see pitches from your own section, and can only be grouped
+            with people in it.
+          </p>
+        </div>
 
         <Field
           label={passwordFocus ? "Password — required for this name" : "Password (optional)"}
@@ -85,9 +118,17 @@ export function LoginForm({ rosterEnforced }: { rosterEnforced: boolean }) {
         {error ? <Notice tone="error">{error}</Notice> : null}
 
         <div className="hairline pt-6">
-          <Button type="submit" disabled={submitting || name.trim().length < 2}>
+          <Button
+            type="submit"
+            disabled={submitting || name.trim().length < 2 || section === null}
+          >
             {submitting ? "Signing in…" : "Continue"}
           </Button>
+          {section === null ? (
+            <p className="label mt-3 normal-case tracking-[0.08em] text-ink-faint">
+              Choose a section to continue.
+            </p>
+          ) : null}
         </div>
       </form>
     </Card>

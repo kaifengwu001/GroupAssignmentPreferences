@@ -5,24 +5,28 @@ const EXPORTS = [
   {
     format: "students",
     label: "Students",
-    body: "One row per student: pitch, who they picked, who picked them, mutual matches.",
+    body: "One row per student, with section, pitch, their ranking in order, and their first three choices in their own columns.",
   },
   {
     format: "pairs",
     label: "Pairs",
-    body: "One row per choice. Best for pivot tables or feeding a grouping script.",
+    body: "One row per choice, carrying its rank. Best for pivot tables or feeding a grouping script.",
   },
   {
     format: "matrix",
     label: "Matrix",
-    body: "Grid of every student against every other. Quickest to eyeball for clusters.",
+    body: "One grid per section. Cells hold the rank, so 1 is a first choice and 0 is no choice.",
   },
 ] as const;
 
 export function ExportPanel({ persistent }: { persistent: boolean }) {
   return (
     <Card>
-      <CardHeader index="03" title="Download responses" meta="CSV, UTF-8" />
+      <CardHeader
+        index="03"
+        title="Download responses"
+        meta="CSV, UTF-8 · both sections, ranked"
+      />
 
       <div className="grid gap-2 sm:grid-cols-3">
         {EXPORTS.map((item) => (

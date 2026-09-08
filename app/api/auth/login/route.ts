@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     return ok({
       id: student.id,
       name: student.name,
+      section: student.section,
       hasPitch: student.pitch !== null,
     });
   });

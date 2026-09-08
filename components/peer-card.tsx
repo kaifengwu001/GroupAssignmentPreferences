@@ -1,27 +1,30 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { ordinal } from "@/lib/ordinal";
 import type { PeerView } from "@/lib/types/section";
 
 /**
- * One selectable classmate. The whole card is the control, so the tap target
- * is large on a phone; the checkbox itself stays in the DOM for screen readers
- * and keyboard use.
+ * One rankable classmate. The whole card is the control, so the tap target is
+ * large on a phone; the checkbox stays in the DOM for screen readers and
+ * keyboard use.
+ *
+ * `rank` is the student's preference position (1 = first choice) or null when
+ * unranked. It is shown as a word, not just a number, so the ordering is
+ * impossible to misread as a card index.
  */
 export function PeerCard({
   peer,
-  index,
-  selected,
+  rank,
   disabled,
   onToggle,
 }: {
   peer: PeerView;
-  index: number;
-  selected: boolean;
+  rank: number | null;
   disabled: boolean;
   onToggle: (id: string) => void;
 }) {
-  const label = String(index + 1).padStart(2, "0");
+  const selected = rank !== null;
 
   return (
     <label
@@ -32,7 +35,13 @@ export function PeerCard({
       )}
     >
       <div className="mb-6 flex items-start justify-between gap-3">
-        <span className="index-mark">{label}</span>
+        {selected ? (
+          <span className="rounded-pill bg-accent px-3 py-1 text-[0.625rem] uppercase tracking-[0.16em] text-white">
+            {ordinal(rank)} choice
+          </span>
+        ) : (
+          <span className="index-mark text-ink-faint">—</span>
+        )}
 
         <input
           type="checkbox"
@@ -42,7 +51,6 @@ export function PeerCard({
           onChange={() => onToggle(peer.id)}
         />
 
-        {/* Selection indicator: the one place colour appears in the grid. */}
         <span
           aria-hidden
           className={cn(
@@ -63,7 +71,7 @@ export function PeerCard({
       )}
 
       <span className="label mt-6 block text-ink-faint">
-        {selected ? "Selected" : "Tap to select"}
+        {selected ? "Tap to remove" : "Tap to add to your ranking"}
       </span>
     </label>
   );

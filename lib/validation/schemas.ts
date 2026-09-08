@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SECTION_IDS, type SectionId } from "@/lib/sections";
+
 /**
  * Schema-based validation for every value that crosses the network boundary.
  * Parsing happens in the route handlers before any store call.
@@ -9,6 +11,11 @@ export const NAME_MAX = 60;
 export const PITCH_MAX = 300;
 export const PASSWORD_MIN = 4;
 export const PASSWORD_MAX = 100;
+
+export const sectionIdSchema = z.enum(
+  SECTION_IDS as unknown as [SectionId, ...SectionId[]],
+  { error: "Choose which section you are in." },
+);
 
 export const nameSchema = z
   .string()
@@ -24,6 +31,7 @@ export const passwordSchema = z
 
 export const loginSchema = z.object({
   name: nameSchema,
+  section: sectionIdSchema,
   // Empty string means "no password supplied", which is a valid choice.
   password: z.union([passwordSchema, z.literal("")]).default(""),
 });
@@ -37,9 +45,10 @@ export const pitchSchema = z.object({
 });
 
 export const preferencesSchema = z.object({
-  // No cap on how many peers a student may pick; the ceiling only guards
-  // against absurd payloads.
-  targetIds: z.array(z.uuid({ error: "Unrecognised selection." })).max(500),
+  // Order is meaningful: index 0 is the student's first choice. There is no
+  // cap on how many peers they may rank; the ceiling only guards against
+  // absurd payloads.
+  orderedTargetIds: z.array(z.uuid({ error: "Unrecognised selection." })).max(500),
 });
 
 export const adminLoginSchema = z.object({

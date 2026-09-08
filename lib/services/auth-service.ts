@@ -53,6 +53,7 @@ export async function signIn(input: LoginInput): Promise<Student> {
     return store.createStudent({
       name: canonicalName ?? typedName,
       nameKey,
+      section: input.section,
       passwordHash: password ? await hashPassword(password) : null,
     });
   }
@@ -64,23 +65,12 @@ export async function signIn(input: LoginInput): Promise<Student> {
     await store.setPasswordHash(existing.id, await hashPassword(password));
   }
 
+  // Switching sections invalidates every choice they made or received, so the
+  // store clears those edges as part of the move.
+  if (existing.section !== input.section) {
+    return store.moveToSection(existing.id, input.section);
+  }
+
   const { passwordHash: _passwordHash, ...student } = existing;
   return student;
-}
-
-/** Reports whether a name already exists and whether it needs a password. */
-export async function inspectName(name: string): Promise<{
-  known: boolean;
-  requiresPassword: boolean;
-}> {
-  const nameKey = toNameKey(name);
-  if (nameKey.length === 0) return { known: false, requiresPassword: false };
-
-  const store = await getStore();
-  const existing = await store.findStudentByNameKey(nameKey);
-
-  return {
-    known: existing !== null,
-    requiresPassword: existing?.passwordHash !== null && existing !== null,
-  };
 }

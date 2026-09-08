@@ -11,6 +11,7 @@ export type ErrorCode =
   | "password_required"
   | "unauthenticated"
   | "pitch_required"
+  | "section_required"
   | "locked"
   | "not_found"
   | "internal";
@@ -55,6 +56,9 @@ export const unauthenticated = () =>
 
 export const pitchRequired = () =>
   new AppError("pitch_required", 403, "Share your project pitch before viewing the section.");
+
+export const sectionRequired = () =>
+  new AppError("section_required", 403, "Choose which section you are in first.");
 
 export const locked = () =>
   new AppError("locked", 423, "Preferences have been locked in.");

@@ -1,22 +1,47 @@
-import { Card } from "@/components/ui/card";
-import type { AdminView } from "@/lib/services/admin-service";
+import { Card, CardHeader } from "@/components/ui/card";
+import type { AdminGroup, SectionStats } from "@/lib/services/admin-service";
 
-export function StatsPanel({ stats }: { stats: AdminView["stats"] }) {
+/** Per-section counts side by side, since the two sections run independently. */
+export function StatsPanel({
+  groups,
+  totals,
+}: {
+  groups: readonly AdminGroup[];
+  totals: SectionStats;
+}) {
+  return (
+    <div className="grid gap-2 lg:grid-cols-3">
+      {groups.map((group) => (
+        <Card key={group.id} as="div">
+          <CardHeader title={`${group.label} section`} />
+          <StatGrid stats={group.stats} />
+        </Card>
+      ))}
+
+      <Card as="div">
+        <CardHeader title="Both sections" />
+        <StatGrid stats={totals} />
+      </Card>
+    </div>
+  );
+}
+
+function StatGrid({ stats }: { stats: SectionStats }) {
   const items = [
     { label: "Signed in", value: stats.students },
-    { label: "Pitches shared", value: stats.pitches },
-    { label: "Selections made", value: stats.selections },
+    { label: "Pitches", value: stats.pitches },
+    { label: "Choices", value: stats.selections },
     { label: "Mutual pairs", value: stats.mutualPairs },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
       {items.map((item) => (
-        <Card key={item.label} as="div" className="p-6">
-          <p className="label">{item.label}</p>
-          <p className="mt-6 text-2xl tabular-nums tracking-[0.06em]">{item.value}</p>
-        </Card>
+        <div key={item.label}>
+          <dt className="label">{item.label}</dt>
+          <dd className="mt-1 text-xl tabular-nums tracking-[0.06em]">{item.value}</dd>
+        </div>
       ))}
-    </div>
+    </dl>
   );
 }

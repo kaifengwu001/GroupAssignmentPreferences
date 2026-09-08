@@ -57,6 +57,34 @@ export function sectionTitle(): string {
   return process.env.SECTION_TITLE?.trim() || "SECTION PITCH";
 }
 
+const DEFAULT_CLOSES_AT = "2026-09-17T23:59:00-07:00";
+const DEFAULT_RESULTS_AT = "2026-09-18T14:00:00-07:00";
+
+function parseDate(raw: string | undefined, fallback: string, name: string): Date | null {
+  const value = raw?.trim() || fallback;
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    console.error(`[section-pitch] ${name} is not a valid date: "${value}". Ignoring it.`);
+    return null;
+  }
+
+  return parsed;
+}
+
+/**
+ * When pitching and selection close. Reaching this instant locks the app on
+ * its own; the admin switch can still close things early.
+ */
+export function closesAt(): Date | null {
+  return parseDate(process.env.CLOSES_AT, DEFAULT_CLOSES_AT, "CLOSES_AT");
+}
+
+/** When groups get published. Display only. */
+export function resultsAt(): Date | null {
+  return parseDate(process.env.RESULTS_AT, DEFAULT_RESULTS_AT, "RESULTS_AT");
+}
+
 /**
  * Whether students may claim a name that has no password by supplying one.
  * Defaults to true, which lets each student lock their own name on first use.
