@@ -8,14 +8,17 @@ export function KeyDates({
   closesLabel,
   resultsLabel,
   remaining,
+  index = "01",
 }: {
   closesLabel: string | null;
   resultsLabel: string | null;
   remaining: string | null;
+  /** Set by the page, since the card sits at a different position on each. */
+  index?: string;
 }) {
   return (
     <Card className="flex flex-col">
-      <CardHeader index="01" title="Key dates" meta={remaining ?? undefined} />
+      <CardHeader index={index} title="Key dates" meta={remaining ?? undefined} />
 
       <dl className="flex flex-1 flex-col gap-7">
         <div>

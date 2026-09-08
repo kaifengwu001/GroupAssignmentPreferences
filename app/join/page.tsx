@@ -40,6 +40,7 @@ export default async function JoinPage() {
         </div>
 
         <KeyDates
+          index="02"
           closesLabel={closes ? formatDateTime(closes) : null}
           resultsLabel={results ? formatDate(results) : null}
           remaining={closes ? timeRemaining(closes) : null}

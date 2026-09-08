@@ -69,7 +69,7 @@ export function LoginForm({
         <Field
           label="Your name"
           htmlFor="name"
-          hint="Type it the same way each time. Capitalisation and spacing don't matter."
+          hint="Capitalisation, spacing, and the order of your names don't matter — 'Ada Lovelace' and 'Lovelace, Ada' both work."
         >
           <TextInput
             id="name"
